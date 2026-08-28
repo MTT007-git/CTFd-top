@@ -79,6 +79,12 @@ jobs:
             --api-secret "$AMO_JWT_SECRET" \
             --upload-source-code source.zip
 
+      # web-ext names the signed file after AMO's internal upload UUID
+      # (e.g. b302e35c923f468f882f-1.0.0.xpi) — give it the same naming
+      # scheme as the Chrome zip below instead.
+      - name: Rename the signed .xpi
+        run: mv web-ext-artifacts/*.xpi "web-ext-artifacts/ctfd-top-tracker-firefox-$EXT_VERSION.xpi"
+
       - name: Package the Chrome build
         run: (cd dist && zip -r "../ctfd-top-tracker-chrome-$EXT_VERSION.zip" .)
 
@@ -88,6 +94,6 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           gh release upload "$RELEASE_TAG" \
-            web-ext-artifacts/*.xpi \
+            "web-ext-artifacts/ctfd-top-tracker-firefox-$EXT_VERSION.xpi" \
             "ctfd-top-tracker-chrome-$EXT_VERSION.zip" \
             --clobber
