@@ -58,7 +58,7 @@ that player.
 ## Quick start
 
 ```bash
-npm install      # dev-only: esbuild, typescript, @types/chrome
+npm install      # dev-only: esbuild, typescript, @types/chrome, web-ext
 npm run build    # emits dist/ (Chrome) and dist-firefox/ (Firefox)
 ```
 
@@ -77,6 +77,42 @@ npm run build    # emits dist/ (Chrome) and dist-firefox/ (Firefox)
 Then open your CTF, click the toolbar icon, and press **Activate for this site**. The
 current tab is instrumented immediately — no reload needed. Activated sites show a red
 **CT** badge on the toolbar icon.
+
+### Signing for Firefox
+
+`dist-firefox/` must be signed by Mozilla before it can be installed as anything other
+than a temporary add-on (`web-ext sign`, or an upload through
+[addons.mozilla.org](https://addons.mozilla.org) for self-distribution). `npm run
+lint:firefox` runs the same validator (`addons-linter`, via `web-ext lint`) that signing
+runs, against a fresh build, so a clean run here means signing won't bounce the package
+back:
+
+```bash
+npm run lint:firefox   # rebuilds, then: web-ext lint --source-dir dist-firefox --self-hosted
+```
+
+`browser_specific_settings.gecko` also carries `data_collection_permissions: { required:
+["none"] }` — a manifest key Firefox now requires from every extension to disclose what
+it collects. `"none"` is accurate here: nothing the extension reads or stores ever leaves
+`storage.local` or the CTFd origin's own API responses.
+
+**`.github/workflows/sign-firefox.yml`** runs this automatically. On every published
+GitHub Release it stamps the release's tag (`v1.2.0` → `1.2.0`) into both manifests,
+type-checks, builds, runs the test suite, lints, signs `dist-firefox/` with Mozilla
+(`--channel unlisted`, i.e. self-distribution — no AMO listing/review involved), zips
+`dist/` for Chrome, and attaches both files to the release. It needs two repository
+secrets:
+
+1. Go to [addons.mozilla.org/developers/addon/api/key](https://addons.mozilla.org/en-US/developers/addon/api/key/)
+   (sign in with the Firefox Account that should own this extension's signing identity)
+   and generate a new API key pair.
+2. In the GitHub repo: **Settings → Secrets and variables → Actions → New repository
+   secret**, and add:
+   - `AMO_JWT_ISSUER` — the "JWT issuer" shown on that page
+   - `AMO_JWT_SECRET` — the paired "JWT secret" (shown once, at generation time)
+
+The manifests in the repo keep whatever version they already have — the workflow's
+version stamp is local to that CI run and is never committed back.
 
 ---
 

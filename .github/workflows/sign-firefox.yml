@@ -1,0 +1,75 @@
+name: Sign Firefox extension
+
+# Fires when a GitHub Release is published. The release's tag becomes the
+# extension version (a "v" prefix, e.g. v1.2.0, is stripped automatically) —
+# nothing in the repo needs a manual version bump before tagging.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write # needed to attach the signed .xpi to the release
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Stamp the release version into both manifests
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+          jq --arg v "$VERSION" '.version = $v' manifest.json > manifest.json.tmp
+          mv manifest.json.tmp manifest.json
+          jq --arg v "$VERSION" '.version = $v' manifest.firefox.json > manifest.firefox.json.tmp
+          mv manifest.firefox.json.tmp manifest.firefox.json
+          echo "EXT_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Run the test suite
+        run: node test/run.mjs
+
+      - name: Lint the Firefox build
+        run: npx web-ext lint --source-dir dist-firefox --self-hosted
+
+      - name: Sign with Mozilla (AMO)
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          npx web-ext sign \
+            --source-dir dist-firefox \
+            --artifacts-dir web-ext-artifacts \
+            --channel unlisted \
+            --api-key "$AMO_JWT_ISSUER" \
+            --api-secret "$AMO_JWT_SECRET"
+
+      - name: Package the Chrome build
+        run: (cd dist && zip -r "../ctfd-top-tracker-chrome-$EXT_VERSION.zip" .)
+
+      - name: Attach artifacts to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            web-ext-artifacts/*.xpi \
+            "ctfd-top-tracker-chrome-$EXT_VERSION.zip" \
+            --clobber
