@@ -49,6 +49,23 @@ jobs:
       - name: Lint the Firefox build
         run: npx web-ext lint --source-dir dist-firefox --self-hosted
 
+      # dist-firefox/ is bundled (esbuild concatenates src/**/*.ts into one file
+      # per entry point), which Mozilla's source-code policy treats the same as
+      # minified output even though nothing is actually obfuscated. Ship the
+      # human-readable TypeScript alongside the build so a reviewer can run
+      # `npm ci && npm run build` and reproduce dist-firefox/ themselves.
+      - name: Archive human-readable source
+        run: |
+          zip -r source.zip \
+            src \
+            manifest.json \
+            manifest.firefox.json \
+            build.mjs \
+            package.json \
+            package-lock.json \
+            tsconfig.json \
+            README.md
+
       - name: Sign with Mozilla (AMO)
         env:
           AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
@@ -59,7 +76,8 @@ jobs:
             --artifacts-dir web-ext-artifacts \
             --channel unlisted \
             --api-key "$AMO_JWT_ISSUER" \
-            --api-secret "$AMO_JWT_SECRET"
+            --api-secret "$AMO_JWT_SECRET" \
+            --upload-source-code source.zip
 
       - name: Package the Chrome build
         run: (cd dist && zip -r "../ctfd-top-tracker-chrome-$EXT_VERSION.zip" .)
