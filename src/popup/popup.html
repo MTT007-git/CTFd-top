@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CTFd Top Tracker</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-title">CTFd Top Tracker</div>
+      <div class="header-host" id="host">—</div>
+    </header>
+
+    <main class="body">
+      <section class="section" id="activate-section">
+        <button class="btn btn-primary" id="activate" type="button">Activate for this site</button>
+        <p class="hint" id="activate-hint">
+          The extension only runs on sites you activate here.
+        </p>
+        <p class="warn" id="warn" hidden></p>
+      </section>
+
+      <section class="section" id="exceptions-section">
+        <h2 class="section-title">Exceptions</h2>
+        <p class="hint">
+          Some CTFd installs remove the “Powered by CTFd” footer link. Adding the site here
+          treats it as CTFd and activates it.
+        </p>
+        <button class="btn btn-secondary" id="add-exception" type="button">Add current site</button>
+        <ul class="list" id="exception-list"></ul>
+      </section>
+
+      <section class="section" id="settings-section" hidden>
+        <h2 class="section-title">Settings</h2>
+
+        <label class="field">
+          <span class="field-label">Top players to display</span>
+          <input class="input input-number" id="topN" type="number" min="1" max="50" step="1" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Cache duration (seconds)</span>
+          <input
+            class="input input-number"
+            id="cacheDurationSec"
+            type="number"
+            min="15"
+            max="3600"
+            step="1"
+          />
+        </label>
+
+        <label class="check">
+          <input type="checkbox" id="autoRefreshOnSolve" />
+          <span>Refresh when you solve a challenge</span>
+        </label>
+        <p class="hint hint-sub">
+          Refetches automatically a moment after CTFd marks a challenge solved, so badges,
+          counts and progress stay current without a page reload.
+        </p>
+
+        <label class="check">
+          <input type="checkbox" id="showRank" />
+          <span>Show rank (#N)</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="showName" />
+          <span>Show name</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="compact" />
+          <span>Compact badges</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="showIndicator" />
+          <span>Show status indicator</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="showTopUsers" />
+          <span>Show top users</span>
+        </label>
+
+        <label class="check">
+          <input type="checkbox" id="showSolveCount" />
+          <span>Show solve-count bubbles</span>
+        </label>
+        <p class="hint hint-sub">Also enables the sort &amp; group widget on the challenges page.</p>
+
+        <label class="check">
+          <input type="checkbox" id="showSolveFilter" />
+          <span>Show solved/unsolved filter</span>
+        </label>
+        <p class="hint hint-sub">Adds a button that cycles all → solved → unsolved.</p>
+
+        <label class="check">
+          <input type="checkbox" id="showSolveProgress" />
+          <span>Show solve progress bar</span>
+        </label>
+        <p class="hint hint-sub">Your own progress across the challenges on the page.</p>
+        <div class="radio-row" id="metric-row" hidden>
+          <label class="radio">
+            <input type="radio" name="metric" id="metric-tasks" value="tasks" />
+            <span>Tasks solved</span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="metric" id="metric-points" value="points" />
+            <span>Points earned</span>
+          </label>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" id="focusMode" />
+          <span>Focus mode</span>
+        </label>
+        <p class="hint hint-sub">Track a single player, ignoring top-N and the watch list.</p>
+        <div id="focus-row" hidden>
+          <div class="ac-wrap">
+            <input class="input" id="focus-input" type="text" placeholder="Player name" autocomplete="off" />
+            <div class="ac-box" id="focus-ac" hidden></div>
+          </div>
+          <ul class="list" id="focus-list"></ul>
+          <p class="hint hint-sub">
+            While focusing, the challenges page gets a <strong>⇄ Compare</strong> button that
+            leaves only the challenges exactly one of you has solved.
+          </p>
+        </div>
+
+        <h3 class="field-label field-label-block">Watch users</h3>
+        <div class="row">
+          <div class="ac-wrap ac-grow">
+            <input class="input" id="watch-input" type="text" placeholder="Player name" autocomplete="off" />
+            <div class="ac-box" id="watch-ac" hidden></div>
+          </div>
+          <button class="btn btn-secondary btn-inline" id="watch-add" type="button">Add</button>
+        </div>
+        <ul class="list" id="watch-list"></ul>
+      </section>
+
+      <footer class="section footer" id="footer" hidden>
+        <button class="btn btn-secondary" id="force-reload" type="button">Force reload cache</button>
+        <button class="btn btn-danger" id="deactivate" type="button">Deactivate for this site</button>
+      </footer>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
